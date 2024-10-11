@@ -73,20 +73,21 @@ pipeline {
             }
         }
 
-        stage('SonarQube Quality Analysis') {
+stage('SonarQube Quality Analysis') {
     steps {
         withSonarQubeEnv('Sonar') {
-            sh '''
-                ${SONAR_HOME}/bin/sonar-scanner \
-                -Dsonar.projectKey=flexiprojectfinal \
-                -Dsonar.projectName=flexiprojectfinal \
-                -Dsonar.sources=src \
-                -Dsonar.host.url=http://localhost:9000 \
+            bat '''
+                "%SONAR_HOME%\\bin\\sonar-scanner.bat" ^
+                -Dsonar.projectKey=flexiprojectfinal ^
+                -Dsonar.projectName=flexiprojectfinal ^
+                -Dsonar.sources=src ^
+                -Dsonar.host.url=http://localhost:9000 ^
                 -Dsonar.login='squ_462969695aec7271f2b3da000417ecd4663b4b9b'
             '''
         }
     }
 }
+
 
 
         // Uncomment the following section if you want to include testing stages
