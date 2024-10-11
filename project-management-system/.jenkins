@@ -1,0 +1,124 @@
+pipeline {
+    agent any
+   
+    environment {
+        PROJECT_NAME = "Project Management Application"
+        REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
+        NODE_PATH = "C:\\nodejs\\node.exe"
+        NPM_PATH = "C:\\nodejs\\npm.cmd"
+        FRONTEND_DIR = "project-management-system\\frontend" // Path to frontend
+        BACKEND_DIR = "project-management-system\\backend"   // Path to backend
+        CI = 'false'
+        SONAR_HOME = tool "Sonar"
+
+    }
+
+    stages {
+        stage('Source') {
+            steps {
+                script {
+                    echo 'Cloning repository...'
+                    git url: 'https://github.com/Chahak081/flexiprojectfinal.git', branch: 'main'
+                }
+            }
+        }
+
+        stage('Checkout Code') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], 
+                                extensions: [], 
+                                userRemoteConfigs: [[credentialsId: '9d1659d9-812c-478d-907c-333968a6a13c', 
+                                                    url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
+            }
+        }
+
+        stage('Install Frontend Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                    echo 'Installing Node.js dependencies for frontend...'
+                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                }
+            }
+        }
+
+        stage('Install Backend Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                    echo 'Installing Node.js dependencies for backend...'
+                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                }
+            }
+        }
+
+        stage('Build') {
+            parallel {
+                stage('Build Frontend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                            echo 'Building frontend...'
+                            bat "${env.NPM_PATH} run build"
+                        }
+                    }
+                }
+
+                stage('Build Backend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                            echo 'No build needed for backend.'
+                            // If you have a build command for the backend, uncomment the following line:
+                            // bat "${env.NPM_PATH} run build"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Quality Analysis'){
+
+          steps{
+             withSonarQubeEnv("Sonar"){
+               sh "$SONAR_HOME/bin/sonar-scanner -Dsonar.projectName=flexiprojectfinal -Dsonar.projectKey=flexiprojectfinal"
+             }
+          }
+
+
+        }
+
+        // Uncomment the following section if you want to include testing stages
+        /*
+        stage('Test') {
+            parallel {
+                stage('Test Frontend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                            echo 'Running frontend tests...'
+                            bat 'npm test' // Run frontend tests
+                        }
+                    }
+                }
+
+                stage('Test Backend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                            echo 'Running backend tests...'
+                            // Add backend test command if necessary
+                        }
+                    }
+                }
+            }
+        }
+        */
+    }
+
+    post {
+        always {
+            echo "Pipeline finished."
+        }
+        success {
+            echo "The pipeline was successful."
+        }
+        failure {
+            echo "The pipeline failed."
+        }
+    }
+}
