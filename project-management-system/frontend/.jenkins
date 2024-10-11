@@ -34,29 +34,26 @@ pipeline {
             }
         }
 
+        stage('Install Frontend Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                    echo 'Installing Node.js dependencies for frontend...'
+                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                }
+            }
+        }
+
+        stage('Install Backend Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                    echo 'Installing Node.js dependencies for backend...'
+                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                }
+            }
+        }
+
         stage('Build') {
             parallel {
-                stage('Install Node.js Dependencies') {
-                    parallel {
-                        stage('Install Frontend Dependencies') {
-                            steps {
-                                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
-                                    echo 'Installing Node.js dependencies for frontend...'
-                                    bat "${env.NPM_PATH} install --legacy-peer-deps"
-                                }
-                            }
-                        }
-                        stage('Install Backend Dependencies') {
-                            steps {
-                                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
-                                    echo 'Installing Node.js dependencies for backend...'
-                                    bat "${env.NPM_PATH} install --legacy-peer-deps"
-                                }
-                            }
-                        }
-                    }
-                }
-
                 stage('Build Frontend') {
                     steps {
                         dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
@@ -69,7 +66,7 @@ pipeline {
                 stage('Build Backend') {
                     steps {
                         dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
-                            echo 'no build needed for backend'
+                            echo 'No build needed for backend.'
                             // If you have a build command for the backend, uncomment the following line:
                             // bat "${env.NPM_PATH} run build"
                         }
