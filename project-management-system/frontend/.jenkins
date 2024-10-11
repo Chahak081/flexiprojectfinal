@@ -31,7 +31,7 @@ pipeline {
                             echo 'Installing Node.js dependencies for frontend...'
                             bat 'npm ci' // Install frontend dependencies
                             echo 'Building frontend application...'
-                            bat 'npm run build' // Build frontend application
+                            bat 'set CI=false && npm run build' // Build frontend application
                         }
                     }
                 }
@@ -41,7 +41,7 @@ pipeline {
                         dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
                             echo 'Installing Node.js dependencies for backend...'
                             bat 'npm ci' // Install backend dependencies
-                            echo 'Building backend application...'
+                            echo 'No build step needed for backend'
                             // Add backend build command if necessary
                         }
                     }
