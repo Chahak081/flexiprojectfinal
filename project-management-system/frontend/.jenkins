@@ -9,46 +9,72 @@ pipeline {
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Source') {
             steps {
-                // Clone the repository into the specified path
-                dir("${env.REPO_PATH}") {
+                script {
                     echo 'Cloning repository...'
                     git url: 'https://github.com/Chahak081/flexiprojectfinal.git', branch: 'main'
                 }
             }
         }
-
-        stage('Install Dependencies') {
+        stage('Checkout Code') {
             steps {
-                // Install frontend dependencies
-                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
-                    echo 'Installing Node.js dependencies for frontend...'
-                    bat 'npm install' // Run 'npm install' from the frontend directory
+               checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '9d1659d9-812c-478d-907c-333968a6a13c', url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
+            }
+        }
+
+        stage('Build') {
+            parallel {
+                stage('Build Frontend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                            echo 'Installing Node.js dependencies for frontend...'
+                            bat 'npm ci' // Install frontend dependencies
+                            echo 'Building frontend application...'
+                            bat 'npm run build' // Build frontend application
+                        }
+                    }
                 }
-                
-                // Install backend dependencies
-                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
-                    echo 'Installing Node.js dependencies for backend...'
-                    bat 'npm install' // Run 'npm install' from the backend directory
+
+                stage('Build Backend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                            echo 'Installing Node.js dependencies for backend...'
+                            bat 'npm ci' // Install backend dependencies
+                            echo 'Building backend application...'
+                            // Add backend build command if necessary
+                        }
+                    }
                 }
             }
         }
 
-        stage('Run Frontend Application') {
-            steps {
-                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
-                    echo 'Running frontend application...'
-                    bat 'npm start' // Run 'npm start' from the frontend directory
-                }
-            }
-        }
+        // stage('Test') {
+//   parallel {
+//       stage('Test Frontend') {
+//           steps {
+//               dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+//                   echo 'Running frontend tests...'
+//                   bat 'npm test' // Run frontend tests
+//               }
+//           }
+//       }
 
-        stage('Run Backend Application') {
+//       stage('Test Backend') {
+//           steps {
+//               dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+//                   echo 'Running backend tests...'
+//                   // Add backend test command if necessary
+//               }
+//           }
+//       }
+//   }
+// }
+        stage('Deploy') {
             steps {
-                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
-                    echo 'Running backend application...'
-                    bat 'npm run serve' // Run 'npm run serve' from the backend directory
+                script {
+                    echo 'Deploying applications...'
+                    // Add deployment scripts/commands for frontend and backend
                 }
             }
         }
