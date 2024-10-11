@@ -2,23 +2,53 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_NAME = "Project management Application"
+        PROJECT_NAME = "Project Management Application"
         REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
-        FRONTEND_DIR = "project-management-system\\frontend" // Adjust to match your folder structure
+        FRONTEND_DIR = "project-management-system\\frontend" // Path to frontend
+        BACKEND_DIR = "project-management-system\\backend"   // Path to backend
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repository') {
             steps {
-               checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '9d1659d9-812c-478d-907c-333968a6a13c', url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
+                // Clone the repository into the specified path
+                dir("${env.REPO_PATH}") {
+                    echo 'Cloning repository...'
+                    git url: 'https://github.com/Chahak081/flexiprojectfinal.git', branch: 'main'
+                }
             }
         }
 
-        stage('Install Node.js Dependencies') {
+        stage('Install Dependencies') {
+            steps {
+                // Install frontend dependencies
+                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                    echo 'Installing Node.js dependencies for frontend...'
+                    bat 'npm install' // Run 'npm install' from the frontend directory
+                }
+                
+                // Install backend dependencies
+                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                    echo 'Installing Node.js dependencies for backend...'
+                    bat 'npm install' // Run 'npm install' from the backend directory
+                }
+            }
+        }
+
+        stage('Run Frontend Application') {
             steps {
                 dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
-                    echo 'Installing Node.js dependencies...'
-                    bat 'npm install' // Run 'npm install' from the frontend directory
+                    echo 'Running frontend application...'
+                    bat 'npm start' // Run 'npm start' from the frontend directory
+                }
+            }
+        }
+
+        stage('Run Backend Application') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                    echo 'Running backend application...'
+                    bat 'npm run serve' // Run 'npm run serve' from the backend directory
                 }
             }
         }
