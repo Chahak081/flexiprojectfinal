@@ -82,7 +82,8 @@ stage('SonarQube Quality Analysis') {
                 -Dsonar.projectName=flexiprojectfinal ^
                 -Dsonar.sources=src ^
                 -Dsonar.host.url=http://localhost:9000 ^
-                -Dsonar.login='squ_462969695aec7271f2b3da000417ecd4663b4b9b'
+                -Dsonar.login='admin' ^
+                -Dsonar.password='test'
             '''
         }
     }
