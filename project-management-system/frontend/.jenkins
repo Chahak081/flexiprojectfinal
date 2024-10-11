@@ -1,10 +1,6 @@
 pipeline {
     agent any
-    tools {
-        jdk 'jdk'
-        nodejs 'nodejs'
-    }
-
+   
     environment {
         PROJECT_NAME = "Project Management Application"
         REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
