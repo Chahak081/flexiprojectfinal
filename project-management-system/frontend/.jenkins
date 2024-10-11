@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+
+    environment {
+        PROJECT_NAME = "Project management Application"
+        REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
+        FRONTEND_DIR = "project-management-system\\frontend" // Adjust to match your folder structure
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: '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', url: 'https://github.com/Chahak081/projflexi.git']])
+            }
+        }
+
+        stage('Install Node.js Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                    echo 'Installing Node.js dependencies...'
+                    bat 'npm install' // Run 'npm install' from the frontend directory
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished."
+        }
+        success {
+            echo "The pipeline was successful."
+        }
+        failure {
+            echo "The pipeline failed."
+        }
+    }
+}
