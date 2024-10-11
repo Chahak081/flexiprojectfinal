@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: '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', url: 'https://github.com/Chahak081/projflexi.git']])
+               checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '9d1659d9-812c-478d-907c-333968a6a13c', url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
             }
         }
 
