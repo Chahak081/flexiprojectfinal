@@ -30,6 +30,8 @@ pipeline {
                         dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
                             echo 'Installing Node.js dependencies for frontend...'
                             bat 'npm ci' // Install frontend dependencies
+                            echo 'Fixing ESLint issues...'
+                            bat 'npm run lint -- --fix' // Run linting with auto-fix
                             echo 'Building frontend application...'
                             bat 'set CI=false && npm run build' // Build frontend application
                         }
