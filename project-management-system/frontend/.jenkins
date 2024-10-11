@@ -1,11 +1,20 @@
 pipeline {
     agent any
+    tools {
+        jdk 'jdk'
+        nodejs 'nodejs'
+    }
+
 
     environment {
         PROJECT_NAME = "Project Management Application"
         REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
+        NODE_PATH = "C:\\nodejs\\node.exe"
+        NPM_PATH = "C:\\nodejs\\npm.cmd"
+
         FRONTEND_DIR = "project-management-system\\frontend" // Path to frontend
         BACKEND_DIR = "project-management-system\\backend"   // Path to backend
+        CI = 'false'
     }
 
     stages {
@@ -25,29 +34,47 @@ pipeline {
 
         stage('Build') {
             parallel {
-                stage('Build Frontend') {
+          stage('Stage: Install Node.js Dependencies') {
+            parallel {
+                stage('Install Frontend Dependencies') {
                     steps {
                         dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
                             echo 'Installing Node.js dependencies for frontend...'
-                            bat 'npm ci' // Install frontend dependencies
-                            echo 'Fixing ESLint issues...'
-                            bat 'npm run lint -- --fix' // Run linting with auto-fix
-                            echo 'Building frontend application...'
-                            bat 'set CI=false && npm run build' // Build frontend application
+                            bat "${env.NPM_PATH} install --legacy-peer-deps"
                         }
                     }
                 }
-
-                stage('Build Backend') {
+                stage('Install Backend Dependencies') {
                     steps {
                         dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
                             echo 'Installing Node.js dependencies for backend...'
-                            bat 'npm ci' // Install backend dependencies
-                            echo 'No build step needed for backend'
-                            // Add backend build command if necessary
+                            bat "${env.NPM_PATH} install --legacy-peer-deps"
                         }
                     }
                 }
+            }
+        }
+
+        stage('Stage: Build Frontend') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                    echo 'Building frontend...'
+                    bat "${env.NPM_PATH} run build"
+                }
+            }
+        }
+
+        stage('Stage: Build Backend') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                    echo 'no build required for backend'
+                    //bat "${env.NPM_PATH} run build"
+                }
+            }
+        }
+    }
+}
+
             }
         }
 
@@ -72,15 +99,7 @@ pipeline {
 //       }
 //   }
 // }
-        stage('Deploy') {
-            steps {
-                script {
-                    echo 'Deploying applications...'
-                    // Add deployment scripts/commands for frontend and backend
-                }
-            }
-        }
-    }
+       
 
     post {
         always {
