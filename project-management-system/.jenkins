@@ -76,19 +76,20 @@ pipeline {
 stage('SonarQube Quality Analysis') {
     steps {
         withSonarQubeEnv('Sonar') {
-          bat """
-    "%SONAR_HOME%\\bin\\sonar-scanner.bat" ^
-    -Dsonar.projectKey=project-management-system ^
-    -Dsonar.projectName=project management system ^
-    -Dsonar.sources=src ^
-    -Dsonar.host.url=http://localhost:9000 ^
-    -Dsonar.login='squ_462969695aec7271f2b3da000417ecd4663b4b9b' ^
-    -X
-"""
-
+            bat """
+                "%SONAR_HOME%\\bin\\sonar-scanner.bat" ^
+                sonar.projectKey=flexiprojectfinal ^
+                sonar.projectName=flexiprojectfinal ^
+                sonar.sources=src ^
+                sonar.host.url=http://localhost:9000 ^
+                sonar.login=admin ^
+                sonar.password=test ^
+                -X
+            """
         }
     }
 }
+
 
 
 
