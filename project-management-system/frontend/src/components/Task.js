@@ -194,7 +194,8 @@ function Task() {
                             >
                                 <div className="pb-2.5 w-full flex justify-between">
                                     <div className="inline-flex items-center space-x-2">
-                                        <h2 className=" text-[#1e293b] font-medium text-sm uppercase leading-3">{column.name}</h2>
+                                        <h2 className="text-blue-300 font-medium text-sm uppercase leading-3">{column.name}</h2>
+
                                         <span className={`h-5 inline-flex items-center justify-center px-2 mb-[2px] leading-none rounded-full text-xs font-semibold text-gray-500 border border-gray-300 ${column.items.length < 1 && 'invisible'}`}>{column.items?.length}</span>
                                     </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width={15} className="text-[#9ba8bc]" viewBox="0 0 448 512"><path d="M120 256c0 30.9-25.1 56-56 56s-56-25.1-56-56s25.1-56 56-56s56 25.1 56 56zm160 0c0 30.9-25.1 56-56 56s-56-25.1-56-56s25.1-56 56-56s56 25.1 56 56zm104 56c-30.9 0-56-25.1-56-56s25.1-56 56-56s56 25.1 56 56s-25.1 56-56 56z" /></svg>
@@ -216,27 +217,47 @@ function Task() {
                                                                 index={index}
                                                             >
                                                                 {(provided, snapshot) => {
+                                                                    // Determine the background color based on the column name
+                                                                    let backgroundColor;
+
+                                                                    if (column.name === "In Progress") {
+                                                                        backgroundColor = 'bg-yellow-300'; // Set yellow for In Progress
+                                                                    } else if (column.name === "To do") {
+                                                                        backgroundColor = 'bg-gray-400'; // Set grey for To do
+                                                                    } else if (column.name === "Done") {
+                                                                        backgroundColor = 'bg-green-200'; // Set green for Done
+                                                                    } else {
+                                                                        backgroundColor = 'bg-blue-100'; // Default color (adjust as needed)
+                                                                    }
+
                                                                     return (
                                                                         <div
                                                                             ref={provided.innerRef}
                                                                             {...provided.draggableProps}
                                                                             {...provided.dragHandleProps}
-                                                                            style={{ ...provided.draggableProps.style }}
-                                                                            onClick={() => handleTaskDetails(item._id)}
-                                                                            className={`select-none px-3.5 pt-3.5 pb-2.5 mb-2 border border-gray-200 rounded-lg shadow-sm bg-white relative ${snapshot.isDragging && 'shadow-md'}`}
+                                                                            className={`${backgroundColor} select-none px-3.5 pt-3.5 pb-2.5 mb-2 border border-gray-200 rounded-lg shadow-sm relative ${snapshot.isDragging && 'shadow-md'}`}
                                                                         >
                                                                             <div className="pb-2">
-                                                                                <div className="flex item-center justify-between">
-                                                                                    <h3 className="text-[#1e293b] font-medium text-sm capitalize">{item.title.slice(0, 22)}{item.title.length > 22 && '...'}</h3>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <h3 className="text-[#1e293b] font-medium text-sm capitalize">
+                                                                                        {item.title.slice(0, 22)}{item.title.length > 22 && '...'}
+                                                                                    </h3>
                                                                                     <DropdownMenu taskId={item._id} handleDelete={handleDelete} projectId={projectId} setRenderChange={setRenderChange} />
                                                                                 </div>
-                                                                                <p className="text-xs text-slate-500 leading-4 -tracking-tight">{item.description.slice(0, 60)}{item.description.length > 60 && '...'}</p>
-                                                                                <span className="py-1 px-2.5 bg-indigo-100 text-indigo-600 rounded-md text-xs font-medium mt-1 inline-block">Task-{item.index}</span>
+                                                                                <p className="text-xs text-slate-500 leading-4 -tracking-tight">
+                                                                                    {item.description.slice(0, 60)}{item.description.length > 60 && '...'}
+                                                                                </p>
+                                                                                <span className="py-1 px-2.5 bg-indigo-100 text-indigo-600 rounded-md text-xs font-medium mt-1 inline-block">
+                                                                                    Task-{item.index}
+                                                                                </span>
                                                                             </div>
                                                                         </div>
                                                                     );
                                                                 }}
                                                             </Draggable>
+
+
+
                                                         );
                                                     })}
                                                     {provided.placeholder}
