@@ -1,5 +1,5 @@
-# Use an official Node.js runtime as a base image
-FROM node:18-alpine
+# Use official Node.js image as the base image
+FROM node:20.11.0
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -10,11 +10,11 @@ COPY package.json package-lock.json ./
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code to the working directory
+# Copy the rest of the application code
 COPY . .
 
-# Expose the port your app runs on
-EXPOSE 5000
+# Expose the backend port (9000)
+EXPOSE 9000
 
-# Command to run the backend server
-CMD ["npm", "run", "serve"]
+# Start the application with nodemon
+CMD ["npx", "nodemon", "server.js"]

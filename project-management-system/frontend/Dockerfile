@@ -16,14 +16,8 @@ COPY . .
 # Build the React app
 RUN npm run build
 
-# Production environment
-FROM nginx:stable-alpine
+# Expose port 3000 for the React app
+EXPOSE 3000
 
-# Copy build output from build stage to nginx
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Expose port 80
-EXPOSE 80
-
-# Start nginx server
-CMD ["nginx", "-g", "daemon off;"]
+# Start the Node.js server (replace 'serve' with the correct command if needed)
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]
