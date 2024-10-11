@@ -1,0 +1,12 @@
+{
+    "name": "project-management-system",
+    "version": "1.0.0",
+    "scripts": {
+        "frontend": "cd frontend && npm start",
+        "backend": "cd backend && npm run serve",
+        "dev": "concurrently \"npm run frontend\" \"npm run backend\""
+    },
+    "devDependencies": {
+        "concurrently": "^7.6.0"
+    }
+}
