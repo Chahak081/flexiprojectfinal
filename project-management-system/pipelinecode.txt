@@ -1,0 +1,208 @@
+pipeline {
+    agent any
+   
+    environment {
+        PROJECT_NAME = "Project Management Application"
+        REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
+        NODE_PATH = "C:\\nodejs\\node.exe"
+        NPM_PATH = "C:\\nodejs\\npm.cmd"
+        FRONTEND_DIR = "project-management-system\\frontend" // Path to frontend
+        BACKEND_DIR = "project-management-system\\backend"   // Path to backend
+        CI = 'false'
+        SONAR_HOME = tool "SonarQube"
+        NVD_API_KEY = credentials('NVD_API_KEY')
+        SONAR_LOGIN = credentials('sonar-login')
+        CREDENTIAL_ID = credentials('Github')
+        DOCKERHUB_CREDENTIALS = credentials('DOCKERHUB_CREDENTIALS') // Jenkins DockerHub credentials
+        DOCKER_COMPOSE_FILE = 'project-management-system/docker-compose.yml'
+        
+
+    }
+
+    stages {
+        stage('Source') {
+            steps {
+                script {
+                    echo 'Cloning repository...'
+                    git url: 'https://github.com/Chahak081/flexiprojectfinal.git', branch: 'main'
+                }
+            }
+        }
+
+        stage('Checkout Code') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], 
+                                extensions: [], 
+                                userRemoteConfigs: [[credentialsId: ${CREDENTIAL_ID}, 
+                                                    url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
+            }
+        }
+
+        stage('Install Frontend Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                    echo 'Installing Node.js dependencies for frontend...'
+                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                }
+            }
+        }
+
+        stage('Install Backend Dependencies') {
+            steps {
+                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                    echo 'Installing Node.js dependencies for backend...'
+                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                }
+            }
+        }
+
+        stage('Build') {
+            parallel {
+                stage('Build Frontend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                            echo 'Building frontend...'
+                            bat "${env.NPM_PATH} run build"
+                        }
+                    }
+                }
+
+                stage('Build Backend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                            echo 'No build needed for backend.'
+                            // If you have a build command for the backend, uncomment the following line:
+                            // bat "${env.NPM_PATH} run build"
+                        }
+                    }
+                }
+            }
+        }
+
+stage('SonarQube Quality Analysis') {
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            bat """
+                "%SONAR_HOME%\\bin\\sonar-scanner.bat" ^
+                -Dsonar.projectKey=project-management ^
+                -Dsonar.sources=project-management-system/frontend/src ^
+                -Dsonar.host.url=http://localhost:9001 ^
+                -Dsonar.login=${SONAR_LOGIN}
+            """
+        }
+    }
+}
+
+
+
+stage("OWASP Dependency Check"){
+    steps{
+      dependencyCheck additionalArguments: '--scan ./ --nvdApiKey ${NVD_API_KEY}', odcInstallation: 'dependency-check'
+
+
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
+
+
+
+        // Uncomment the following section if you want to include testing stages
+        /*
+        stage('Test') {
+            parallel {
+                stage('Test Frontend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                            echo 'Running frontend tests...'
+                            bat 'npm test' // Run frontend tests
+                        }
+                    }
+                }
+
+                stage('Test Backend') {
+                    steps {
+                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                            echo 'Running backend tests...'
+                            // Add backend test command if necessary
+                        }
+                    }
+                }
+            }
+        }
+        */
+
+
+
+
+    stages {
+        stage('Verify Docker Compose File') {
+            steps {
+                script {
+                    echo "Checking if Docker Compose file exists..."
+                    def exists = bat(
+                        script: "if exist \"${DOCKER_COMPOSE_FILE}\" (exit 0) else (exit 1)",
+                        returnStatus: true
+                    )
+                    if (exists != 0) {
+                        error "Docker Compose file not found: ${DOCKER_COMPOSE_FILE}"
+                    } else {
+                        echo "Docker Compose file found."
+                    }
+                }
+            }
+        }
+
+        stage('Check, Build, and Push Images') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        def services = ["mongo", "backend", "frontend"]
+                        def images = [
+                            "mongo": "${DOCKER_USERNAME}/project-management-system-mongo:latest",
+                            "backend": "${DOCKER_USERNAME}/project-management-system-backend:latest",
+                            "frontend": "${DOCKER_USERNAME}/project-management-system-frontend:latest"
+                        ]
+
+                        services.each { service ->
+                            echo "Processing service: ${service}"
+
+                            def imageExists = bat(
+                                script: "docker image inspect ${images[service]} >nul 2>&1",
+                                returnStatus: true
+                            ) == 0
+
+                            if (imageExists) {
+                                echo "${images[service]} already exists locally. Skipping build."
+                            } else {
+                                echo "Building ${service}..."
+                                bat "docker-compose -f \"${DOCKER_COMPOSE_FILE}\" build ${service}"
+                                bat "docker tag ${service} ${images[service]}"
+                            }
+
+                           
+
+                            // Push the image to DockerHub
+                            echo "Pushing ${images[service]} to DockerHub..."
+                           
+                            bat "docker push ${images[service]}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+    post {
+        always {
+            echo "Pipeline finished."
+        }
+        success {
+            echo "Pipeline completed successfully."
+        }
+        failure {
+            echo "Pipeline failed."
+        }
+}
+
+
