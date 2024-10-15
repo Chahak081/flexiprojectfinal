@@ -14,7 +14,7 @@ services:
       - mern  # Connects to custom network
 
   backend:
-    image: sumedhdongre/project-management-system-backend:latest  # Backend image from DockerHub
+    image: chahak12/project-management-system-backend:latest  # Backend image from DockerHub
     container_name: backend
     environment:
       - MONGODB_PATH=mongodb://root:example@mongo-db:27017/  # MongoDB URI with credentials
@@ -27,7 +27,7 @@ services:
       - mern  # Connects to custom network
 
   frontend:
-    image: sumedhdongre/project-management-system-frontend:latest  # Frontend image from DockerHub
+    image: chahak12/project-management-system-frontend:latest  # Frontend image from DockerHub
     container_name: frontend
     ports:
       - "3000:3000"  # Maps frontend port
