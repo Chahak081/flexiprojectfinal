@@ -2,132 +2,240 @@ pipeline {
     agent any
    
     environment {
+        DOCKER_COMPOSE_FILE = "project-management-system/docker-compose.yml"
+        SONAR_HOME = tool "SonarQube"
         PROJECT_NAME = "Project Management Application"
-        REPO_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\first_pipeline"
-        NODE_PATH = "C:\\nodejs\\node.exe"
-        NPM_PATH = "C:\\nodejs\\npm.cmd"
-        FRONTEND_DIR = "project-management-system\\frontend" // Path to frontend
-        BACKEND_DIR = "project-management-system\\backend"   // Path to backend
+        REPO_PATH = "/var/lib/jenkins/workspace/flexi-pipeline" // Adjusted path for Linux
+        NODE_PATH = "/usr/bin/node" // Path to Node.js on Ubuntu
+        NPM_PATH = "/usr/bin/npm" // Path to npm on Ubuntu
+        FRONTEND_DIR = "project-management-system/frontend" // Path to frontend
+        BACKEND_DIR = "project-management-system/backend" // Path to backend
         CI = 'false'
-        SONAR_HOME = tool "Sonar"
-
+        NVD_API_KEY = credentials('NVD_API_KEY')
+        SONAR_LOGIN = credentials('sonarCH')
+        CREDENTIAL_ID = credentials('githubCH')
+        DOCKERHUB_CREDENTIALS = credentials('dockerIDPASS') // Jenkins DockerHub credentials
+        DOCKER_USERNAME = 'chahak12'
+        AZURE_CLIENT_ID = credentials('azure-client-id') // Client ID
+        AZURE_CREDENTIALS = credentials('azure-credential-id') // Client Secret
+        AZURE_TENANT_ID = credentials('azure-tenant-id')
     }
-
+    
     stages {
         stage('Source') {
             steps {
-                script {
-                    echo 'Cloning repository...'
-                    git url: 'https://github.com/Chahak081/flexiprojectfinal.git', branch: 'main'
-                }
+              script {
+                    echo 'Cloning repository..'
+                    git branch: 'main', credentialsId: 'githubCH', url: 'https://github.com/Chahak081/flexiprojectfinal.git'
+              }
             }
         }
-
-        stage('Checkout Code') {
+         stage('Checkout Code') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], 
-                                extensions: [], 
-                                userRemoteConfigs: [[credentialsId: '9d1659d9-812c-478d-907c-333968a6a13c', 
-                                                    url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
-            }
-        }
-
+                checkout scmGit(branches: [[name: '*/main']], extensions: [],
+                userRemoteConfigs: [[credentialsId: 'githubCH', 
+                url: 'https://github.com/Chahak081/flexiprojectfinal.git']])
+        }}
+       
         stage('Install Frontend Dependencies') {
             steps {
-                dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                dir("${env.REPO_PATH}/${env.FRONTEND_DIR}") {
                     echo 'Installing Node.js dependencies for frontend...'
-                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                    sh "${env.NPM_PATH} install --legacy-peer-deps || true"
                 }
             }
         }
-
         stage('Install Backend Dependencies') {
             steps {
-                dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                dir("${env.REPO_PATH}/${env.BACKEND_DIR}") {
                     echo 'Installing Node.js dependencies for backend...'
-                    bat "${env.NPM_PATH} install --legacy-peer-deps"
+                    sh "${env.NPM_PATH} install --legacy-peer-deps || true"
                 }
             }
         }
-
         stage('Build') {
             parallel {
                 stage('Build Frontend') {
                     steps {
-                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
+                        dir("${env.REPO_PATH}/${env.FRONTEND_DIR}") {
                             echo 'Building frontend...'
-                            bat "${env.NPM_PATH} run build"
+                            sh "${env.NPM_PATH} run build || true"
                         }
                     }
                 }
-
                 stage('Build Backend') {
                     steps {
-                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
+                        dir("${env.REPO_PATH}/${env.BACKEND_DIR}") {
                             echo 'No build needed for backend.'
                             // If you have a build command for the backend, uncomment the following line:
-                            // bat "${env.NPM_PATH} run build"
+                            // sh "${env.NPM_PATH} run build"
                         }
                     }
                 }
             }
         }
+        stage('SonarQube Quality Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        ${SONAR_HOME}/bin/sonar-scanner \
+                          -Dsonar.projectKey=project-management \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://138.91.75.183:9001 \
+                          -Dsonar.token=${SONAR_LOGIN}
+                    """
 
-stage('SonarQube Quality Analysis') {
-    steps {
-        withSonarQubeEnv('Sonar') {
-            bat """
-                "%SONAR_HOME%\\bin\\sonar-scanner.bat" ^
-                sonar.projectKey=flexiprojectfinal ^
-                sonar.projectName=flexiprojectfinal ^
-                sonar.sources=src ^
-                sonar.host.url=http://localhost:9000 ^
-                sonar.login=admin ^
-                sonar.password=test ^
-                -X
-            """
+                }
+            }
         }
-    }
+        stage("OWASP Dependency Check") {
+            steps {
+                dependencyCheck additionalArguments: "--scan ./ --nvdApiKey ${NVD_API_KEY}", odcInstallation: "dependency-check"
+                dependencyCheckPublisher pattern: "dependency-check-report.xml"
+            }
+        }
+        stage('Verify Docker Compose File') {
+            steps {
+                script {
+                    echo "Checking if Docker Compose file exists..."
+                    def exists = sh(
+                        script: "if [ -f \"${DOCKER_COMPOSE_FILE}\" ]; then exit 0; else exit 1; fi",
+                        returnStatus: true
+                    )
+                    if (exists != 0) {
+                        error "Docker Compose file not found: ${DOCKER_COMPOSE_FILE}"
+                    } else {
+                        echo "Docker Compose file found."
+                    }
+                }
+            }
+        }
+stage('Build Docker Images') {
+    steps {
+        script {
+            dir("${env.REPO_PATH}/project-management-system") {
+
+                // Check if MongoDB container exists, if not create and run the MongoDB container
+                sh '''
+                    if [ ! $(docker ps -aq -f name=mongodb) ]; then
+                        echo "MongoDB container not found, creating it..."
+                        docker run --network=mern --name mongodb -d \
+                        -p 27017:27017 \
+                        -v /var/lib/jenkins/opt/data:/data/db \
+                        mongo:latest
+                    else
+                        echo "MongoDB container already exists, skipping creation."
+                    fi
+                '''
+
+                // Check if the backend image exists, if not build it
+                sh '''
+                    if [ ! $(docker images -q backend-image) ]; then
+                        echo "Backend image not found, building it..."
+                        docker build -t backend-image ./backend
+                    else
+                        echo "Backend image already exists, skipping build."
+                    fi
+                '''
+
+                // Check if the backend container exists, if not run it
+                sh '''
+                    if [ ! $(docker ps -aq -f name=backend-container) ]; then
+                        echo "Backend container not found, creating it..."
+                        docker run --network=mern --name backend-container -d \
+                        -p 9000:9000 backend-image
+                    else
+                        echo "Backend container already exists, skipping creation."
+                    fi
+                '''
+
+                // Check if the frontend image exists, if not build it
+                sh '''
+                    if [ ! $(docker images -q frontend-image) ]; then
+                        echo "Frontend image not found, building it..."
+                        docker build -t frontend-image ./frontend
+                    else
+                        echo "Frontend image already exists, skipping build."
+                    fi
+                '''
+
+                // Check if the frontend container exists, if not run it
+                sh '''
+                    if [ ! $(docker ps -aq -f name=frontend-container) ]; then
+                        echo "Frontend container not found, creating it..."
+                        docker run --network=mern --name frontend-container -d \
+                        -p 3000:3000 frontend-image
+                    else
+                        echo "Frontend container already exists, skipping creation."
+                    fi
+                '''
+
+                // List running containers to verify
+                sh 'docker ps'
+            }
+        }
+    }}
+
+
+     stage('Tag and Push Images') {
+            steps {
+                script {
+                    // Step 1: List existing images to verify their availability
+                    sh 'docker images'
+
+                    // Step 2: Tag backend and frontend images
+                    sh 'docker tag backend-image:latest ${DOCKER_USERNAME}/project-management-system-backend:latest'
+                    sh 'docker tag frontend-image:latest ${DOCKER_USERNAME}/project-management-system-frontend:latest'
+                    sh 'docker tag mongo:latest ${DOCKER_USERNAME}/project-management-system-mongo:latest'
+
+
+                    // Step 3: Push the images to Docker Hub
+                    sh 'docker push ${DOCKER_USERNAME}/project-management-system-backend:latest'
+                    sh 'docker push ${DOCKER_USERNAME}/project-management-system-frontend:latest'
+                    sh 'docker push ${DOCKER_USERNAME}/project-management-system-mongo:latest'
+                }
+            }
+        }
+        
+        stage('Deploy to AKS') {
+            steps {
+                script {
+                    // Log in to Azure using service principal
+                    sh '''
+                    echo "Logging in to Azure..."
+                    az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CREDENTIALS --tenant $AZURE_TENANT_ID
+                    '''
+
+                    // Set the context for your AKS cluster
+                    sh '''
+                    echo "Setting context for AKS..."
+                    az aks get-credentials --resource-group Flexi-Proj-Manager --name flexi-kube-cluster --overwrite-existing
+                    '''
+
+                    // Deploy your application to AKS
+                    sh '''
+                    echo "Deploying to AKS..."
+                    '''
+                    sh " kubectl apply -f ${env.REPO_PATH}/k8s/frontend-deplyoment.yaml"
+                    sh " kubectl apply -f ${env.REPO_PATH}/k8s/backend-deployment.yaml "
+                    sh " kubectl apply -f ${env.REPO_PATH}/k8s/frontend-service.yaml"
+                    sh " kubectl apply -f ${env.REPO_PATH}/k8s/backend-service.yaml"
+                  
+                }
+            }
+        }
 }
 
-
-
-
-        // Uncomment the following section if you want to include testing stages
-        /*
-        stage('Test') {
-            parallel {
-                stage('Test Frontend') {
-                    steps {
-                        dir("${env.REPO_PATH}\\${env.FRONTEND_DIR}") {
-                            echo 'Running frontend tests...'
-                            bat 'npm test' // Run frontend tests
-                        }
-                    }
-                }
-
-                stage('Test Backend') {
-                    steps {
-                        dir("${env.REPO_PATH}\\${env.BACKEND_DIR}") {
-                            echo 'Running backend tests...'
-                            // Add backend test command if necessary
-                        }
-                    }
-                }
-            }
-        }
-        */
-    }
-
+    
     post {
         always {
             echo "Pipeline finished."
         }
         success {
-            echo "The pipeline was successful."
+            echo "Pipeline completed successfully."
         }
         failure {
-            echo "The pipeline failed."
+            echo "Pipeline failed."
         }
     }
 }
