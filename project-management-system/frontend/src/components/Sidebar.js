@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import AddProjectModal from './AddProjectModal'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
+import API_BASE_URL from '../BaseURl'
 // import toast from 'react-hot-toast'
 const Sidebar = () => {
 
@@ -24,7 +25,7 @@ const Sidebar = () => {
   }, [])
 
   const projectData = () => {
-    axios.get('${process.env.API_BASE_URL}/projects/')
+    axios.get(`${API_BASE_URL}/projects/`)
       .then((res) => {
         setProjects(res.data)
       })

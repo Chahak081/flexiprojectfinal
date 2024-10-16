@@ -11,12 +11,11 @@ mongoose.connect(process.env.MONGODB_PATH, () => {
 
 
 const PORT = process.env.SERVER_PORT || 9000
-const origin = process.env.CORS_ORIGIN 
 
 const app = express()
 
 app.use(cors({
-    origin
+    origin: '*' // Changed from specific origin to wildcard
 }));
 app.use(express.json())
 app.use(express.urlencoded())

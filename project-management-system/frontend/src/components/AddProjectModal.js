@@ -4,6 +4,7 @@ import BtnPrimary from './BtnPrimary'
 import BtnSecondary from './BtnSecondary'
 import axios from "axios"
 import toast from 'react-hot-toast'
+import API_BASE_URL from '../BaseURl'
 
 const AddProjectModal = ({ isModalOpen, closeModal, edit = false, id = null }) => {
 
@@ -12,7 +13,7 @@ const AddProjectModal = ({ isModalOpen, closeModal, edit = false, id = null }) =
 
     useEffect(() => {
         if (edit && isModalOpen) {
-            axios.get(`${process.env.API_BASE_URL}/project/${id}`)
+            axios.get(`${API_BASE_URL}/project/${id}`)
                 .then((res) => {
                     setTitle(res.data[0].title)
                     setDesc(res.data[0].description)
@@ -27,7 +28,7 @@ const AddProjectModal = ({ isModalOpen, closeModal, edit = false, id = null }) =
     const handleSubmit = (e) => {
         e.preventDefault()
         if (!edit) {
-            axios.post('${process.env.API_BASE_URL}/project/', { title, description: desc })
+            axios.post(`${API_BASE_URL}/project/`, { title, description: desc })
                 .then((res) => {
                     closeModal()
                     const customEvent = new CustomEvent('projectUpdate', { detail: { ...res.data } });
@@ -44,7 +45,7 @@ const AddProjectModal = ({ isModalOpen, closeModal, edit = false, id = null }) =
                     }
                 })
         } else {
-            axios.put(`${process.env.API_BASE_URL}/project/${id}`, { title, description: desc })
+            axios.put(`${API_BASE_URL}/project/${id}`, { title, description: desc })
                 .then((res) => {
                     closeModal()
                     const customEvent = new CustomEvent('projectUpdate', { detail: { ...res.data } });

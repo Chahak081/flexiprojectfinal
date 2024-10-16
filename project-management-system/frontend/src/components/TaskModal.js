@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 
 
 
+import API_BASE_URL from '../BaseURl'
 
 const TaskModal = ({ isOpen, setIsOpen, id }) => {
     const [taskData, setTaskData] = useState('')
@@ -19,7 +20,7 @@ const TaskModal = ({ isOpen, setIsOpen, id }) => {
 
     useEffect(() => {
         if (isOpen) {
-            axios.get(`h${process.env.API_BASE_URL}/project/${id.projectId}/task/${id.id}`)
+            axios.get(`${API_BASE_URL}/project/${id.projectId}/task/${id.id}`)
                 .then((data) => {
                     setTaskData({ ...data.data[0].task[0] });
                     // console.log(taskData);

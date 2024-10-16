@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Task from "./components/Task";
 import { Toaster } from "react-hot-toast";
 
+
 function App() {
   console.log('render app..');
   return (
