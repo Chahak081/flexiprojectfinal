@@ -16,8 +16,11 @@ COPY . .
 # Build the React app
 RUN npm run build
 
+# Install serve globally
+RUN npm install -g serve
+
 # Expose port 3000 for the React app
 EXPOSE 3000
 
-# Start the Node.js server (replace 'serve' with the correct command if needed)
+# Start the Node.js server
 CMD ["serve", "-s", "build", "-l", "3000", "-n"]
