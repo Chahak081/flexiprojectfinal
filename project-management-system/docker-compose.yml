@@ -1,45 +1,41 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongo:latest
     container_name: mongo-db
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root  # Root username for MongoDB
-      - MONGO_INITDB_ROOT_PASSWORD=example  # Root password for MongoDB
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
     ports:
-      - "27017:27017"  # Maps MongoDB port
+      - "27017:27017"
     volumes:
-      - mongo-data:/data/db  # Persist data in a named volume
+      - mongo-data:/data/db
     networks:
-      - mern  # Connects to custom network
+      - mern
 
   backend:
-    build:
-      context: ./backend  # Path to backend Dockerfile
+    build: ./backend  # Add build context for local build
     container_name: backend
     environment:
-      - MONGODB_PATH=mongodb://root:example@mongo-db:27017/  # MongoDB URI with credentials
-      - SERVER_PORT=9000  # Backend server port
+      - MONGODB_PATH=mongodb://root:example@mongo-db:27017/
+      - SERVER_PORT=9000
     ports:
-      - "9000:9000"  # Maps backend port
+      - "9000:9000"
     depends_on:
-      - mongo  # Wait for MongoDB to start
+      - mongo
     networks:
-      - mern  # Connects to custom network
+      - mern
 
   frontend:
-    build:
-      context: ./frontend  # Path to frontend Dockerfile
+    build: ./frontend  # Add build context for local build
     container_name: frontend
     ports:
-      - "3000:3000"  # Maps frontend port
+      - "3000:3000"
     networks:
-      - mern  # Connects to custom network
+      - mern
 
 networks:
-  mern:  # Custom bridge network
+  mern:
     driver: bridge
 
 volumes:
-  mongo-data:  # Named volume for MongoDB data
+  mongo-data:
