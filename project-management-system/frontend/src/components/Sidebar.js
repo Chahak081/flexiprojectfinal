@@ -24,7 +24,7 @@ const Sidebar = () => {
   }, [])
 
   const projectData = () => {
-    axios.get('http://localhost:9000/projects/')
+    axios.get('${process.env.API_BASE_URL}/projects/')
       .then((res) => {
         setProjects(res.data)
       })

@@ -15,7 +15,7 @@ const AppLayout = ({ children }) => {
         <div className={`min-h-screen flex flex-col ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
             {/* Navbar */}
             <Navbar isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)} />
-
+        
             {/* Main Content */}
             <div className='flex-grow flex container mx-auto w-screen' style={{ height: 'calc(100vh - 56px)' }}>
                 <div className="w-[220px]">
